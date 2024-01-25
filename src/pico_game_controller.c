@@ -17,8 +17,10 @@
 #include "hardware/pio.h"
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
+#include "nfc_defs.h"
 #include "tusb.h"
 #include "usb_descriptors.h"
+#include "nfc.h"
 // clang-format off
 #include "debounce/debounce_include.h"
 #include "rgb/rgb_include.h"
@@ -93,6 +95,77 @@ struct report {
   uint8_t joy0;
 } report;
 
+static struct {
+    uint8_t current[9];
+    uint8_t reported[9];
+    uint64_t report_time;
+} hid_cardio;
+
+void report_hid_cardio()
+{
+    if (!tud_hid_ready()) {
+        return;
+    }
+
+    uint64_t now = time_us_64();
+
+    if ((memcmp(hid_cardio.current, hid_cardio.reported, 9) != 0) &&
+        (now - hid_cardio.report_time > 1000000)) {
+
+        tud_hid_n_report(1, hid_cardio.current[0], hid_cardio.current + 1, 8);
+        memcpy(hid_cardio.reported, hid_cardio.current, 9);
+        hid_cardio.report_time = now;
+    }
+}
+
+void detect_card()
+{
+    static nfc_card_t old_card = { 0 };
+
+    nfc_card_t card = nfc_detect_card();
+    switch (card.card_type) {
+        case NFC_CARD_MIFARE:
+            hid_cardio.current[0] = REPORT_ID_EAMU;
+            hid_cardio.current[1] = 0xe0;
+            hid_cardio.current[2] = 0x04;
+            if (card.len == 4) {
+                memcpy(hid_cardio.current + 3, card.uid, 4);
+                memcpy(hid_cardio.current + 7, card.uid, 2);
+            } else if (card.len == 7) {
+                memcpy(hid_cardio.current + 3, card.uid + 1, 6);
+            }
+            break;
+        case NFC_CARD_FELICA:
+            hid_cardio.current[0] = REPORT_ID_FELICA;
+            memcpy(hid_cardio.current + 1, card.uid, 8);
+            break;
+        case NFC_CARD_VICINITY:
+            hid_cardio.current[0] = REPORT_ID_EAMU;
+            memcpy(hid_cardio.current + 1, card.uid, 8);
+            break;
+        default:
+            memset(hid_cardio.current, 0, 9);
+    }
+    if (memcmp(&old_card, &card, sizeof(card)) == 0) {
+        return;
+    }
+
+    if (card.card_type != NFC_CARD_NULL) {
+        const char *card_type_str[3] = { "MIFARE", "FeliCa", "15693" };
+        printf("\n%s:", card_type_str[card.card_type - 1]);
+        for (int i = 0; i < card.len; i++) {
+            printf(" %02x", hid_cardio.current[i]);
+        }
+    }
+
+    old_card = card;
+}
+
+void wait_loop()
+{
+    tud_task();
+}
+
 /**
  * Gamepad Mode
  **/
@@ -101,7 +174,7 @@ void joy_mode() {
     // find the delta between previous and current enc_val
     for (int i = 0; i < ENC_GPIO_SIZE; i++) {
       cur_enc_val[i] +=
-          ((ENC_REV[i] ? 1 : -1) * (enc_val[i] - prev_enc_val[i]));
+          ((enc_val[i] - prev_enc_val[i]));
       while (cur_enc_val[i] < 0) cur_enc_val[i] = ENC_PULSE + cur_enc_val[i];
       cur_enc_val[i] %= ENC_PULSE;
 
@@ -141,7 +214,7 @@ void key_mode() {
       // find the delta between previous and current enc_val
       int delta[ENC_GPIO_SIZE] = {0};
       for (int i = 0; i < ENC_GPIO_SIZE; i++) {
-        delta[i] = (enc_val[i] - prev_enc_val[i]) * (ENC_REV[i] ? 1 : -1);
+        delta[i] = (enc_val[i] - prev_enc_val[i]);
         prev_enc_val[i] = enc_val[i];
       }
       tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta[0] * MOUSE_SENS, 0, 0,
@@ -190,6 +263,8 @@ void core1_entry() {
   uint32_t counter = 0;
   while (1) {
     ws2812b_update(++counter);
+	detect_card();
+	report_hid_cardio();
     sleep_ms(5);
   }
 }
@@ -201,7 +276,7 @@ void init() {
   // LED Pin on when connected
   gpio_init(25);
   gpio_set_dir(25, GPIO_OUT);
-  gpio_put(25, 1);
+  //gpio_put(25, 1);
 
   // Set up the state machine for encoders
   pio = pio0;
@@ -287,6 +362,8 @@ int main(void) {
   board_init();
   init();
   tusb_init();
+  stdio_init_all();
+  nfc_init(wait_loop);
 
   while (1) {
     tud_task();  // tinyusb device task

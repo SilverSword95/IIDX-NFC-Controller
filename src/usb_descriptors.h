@@ -10,6 +10,8 @@ enum {
   REPORT_ID_LIGHTS,
   REPORT_ID_KEYBOARD,
   REPORT_ID_MOUSE,
+  REPORT_ID_EAMU,
+  REPORT_ID_FELICA,
 };
 
 // because they are missing from tusb_hid.h
@@ -35,7 +37,7 @@ enum {
       HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP), HID_LOGICAL_MIN(0x00),           \
       HID_LOGICAL_MAX_N(0x00ff, 2),                                            \
       HID_USAGE(HID_USAGE_DESKTOP_X), /*Joystick*/                             \
-      HID_REPORT_COUNT(2), HID_REPORT_SIZE(8), \
+      HID_USAGE(HID_USAGE_DESKTOP_Y), HID_REPORT_COUNT(2), HID_REPORT_SIZE(8), \
       HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE), HID_COLLECTION_END
 
 // Light Map
@@ -61,5 +63,25 @@ enum {
       HID_LOGICAL_MIN(0), HID_LOGICAL_MAX(1),                                 \
       HID_USAGE_PAGE(HID_USAGE_PAGE_KEYBOARD), HID_USAGE_MIN(0),              \
       HID_USAGE_MAX(31 * 8 - 1), HID_INPUT(HID_VARIABLE), HID_COLLECTION_END
+	  
+//NFC Descriptor
+#define GAMECON_REPORT_DESC_CARDIO                         \
+    HID_USAGE_PAGE_N(0xffca, 2),                           \
+    HID_USAGE(0x01),                                       \
+      HID_COLLECTION(HID_COLLECTION_APPLICATION),          \
+        HID_REPORT_ID(REPORT_ID_EAMU)                      \
+        HID_USAGE_PAGE_N(0xffca, 2),                       \
+        HID_USAGE(0x41),                                   \
+        HID_LOGICAL_MIN(1), HID_LOGICAL_MAX(0xff),         \
+        HID_REPORT_SIZE(8), HID_REPORT_COUNT(8),           \
+        HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE), \
+                                                           \
+        HID_REPORT_ID(REPORT_ID_FELICA)                    \
+        HID_USAGE_PAGE_N(0xffca, 2),                       \
+        HID_USAGE(0x42),                                   \
+        HID_LOGICAL_MIN(1), HID_LOGICAL_MAX(0xff),         \
+        HID_REPORT_SIZE(8), HID_REPORT_COUNT(8),           \
+        HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE), \
+    HID_COLLECTION_END
 
 #endif /* USB_DESCRIPTORS_H_ */

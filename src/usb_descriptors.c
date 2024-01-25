@@ -24,7 +24,7 @@
  */
 
 #include "usb_descriptors.h"
-
+#include "pico/unique_id.h"
 #include "tusb.h"
 
 /* A combination of interfaces must have a unique product id, since PC will save
@@ -94,24 +94,35 @@ uint8_t const desc_hid_report_key[] = {
     GAMECON_REPORT_DESC_LIGHTS(HID_REPORT_ID(REPORT_ID_LIGHTS)),
     GAMECON_REPORT_DESC_NKRO(HID_REPORT_ID(REPORT_ID_KEYBOARD)),
     TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(REPORT_ID_MOUSE))};
+	
+uint8_t const desc_hid_report_cardio[] = {
+    GAMECON_REPORT_DESC_CARDIO,
+};
 
 // Invoked when received GET HID REPORT DESCRIPTOR
 // Application return pointer to descriptor
 // Descriptor contents must exist long enough for transfer to complete
 uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf) {
-  (void)itf;
-  return (joy_mode_check ? desc_hid_report_joy : desc_hid_report_key);
+  switch (itf) {
+        case 0:
+            return (joy_mode_check ? desc_hid_report_joy : desc_hid_report_key);
+        case 1:
+            return desc_hid_report_cardio;
+        default:
+            return NULL;
+    }
 }
 
 //--------------------------------------------------------------------+
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-enum { ITF_NUM_HID, ITF_NUM_TOTAL };
+enum { ITF_NUM_HID, ITF_NUM_CARDIO, ITF_NUM_TOTAL };
 
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN)
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * 2)
 
 #define EPNUM_HID 0x81
+#define EPNUM_CARDIO 0x82
 
 uint8_t const desc_configuration_joy[] = {
     // Config number, interface count, string index, total length, attribute,
@@ -123,6 +134,10 @@ uint8_t const desc_configuration_joy[] = {
     // address, size & polling interval
     TUD_HID_DESCRIPTOR(ITF_NUM_HID, 0, HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report_joy), EPNUM_HID,
+                       CFG_TUD_HID_EP_BUFSIZE, 1),
+					   
+	TUD_HID_DESCRIPTOR(ITF_NUM_CARDIO, 22, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_cardio), EPNUM_CARDIO,
                        CFG_TUD_HID_EP_BUFSIZE, 1)};
 
 uint8_t const desc_configuration_key[] = {
@@ -135,6 +150,10 @@ uint8_t const desc_configuration_key[] = {
     // address, size & polling interval
     TUD_HID_DESCRIPTOR(ITF_NUM_HID, 0, HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report_key), EPNUM_HID,
+                       CFG_TUD_HID_EP_BUFSIZE, 1),
+					   
+	TUD_HID_DESCRIPTOR(ITF_NUM_CARDIO, 22, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_cardio), EPNUM_CARDIO,
                        CFG_TUD_HID_EP_BUFSIZE, 1)};
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
@@ -149,12 +168,14 @@ uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
 // String Descriptors
 //--------------------------------------------------------------------+
 
+static char serial_number_str[24] = "123456\0";
+
 // array of pointer to string descriptors
 char const* string_desc_arr[] = {
     (const char[]){0x09, 0x04},  // 0: is supported language is English (0x0409)
     "Konami Amusement",          // 1: Manufacturer
     "beatmania IIDX controller premium model",  // 2: Product
-    "123456",  // 3: Serials, should use chip ID
+    serial_number_str,  // 3: Serials, should use chip ID
     "Key 1",
     "Key 2",
     "Key 3",
@@ -173,6 +194,7 @@ char const* string_desc_arr[] = {
     "Red 2",
     "Green 2",
     "Blue 2",
+	"IIDX CardIO", //22: NFC String
 };
 
 static uint16_t _desc_str[64];
@@ -188,7 +210,11 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
   if (index == 0) {
     memcpy(&_desc_str[1], string_desc_arr[0], 2);
     chr_count = 1;
-  } else {
+  } else if (index == 3) {
+	pico_unique_board_id_t board_id;
+    pico_get_unique_board_id(&board_id);
+    sprintf(serial_number_str, "%016llx", *(uint64_t *)&board_id);
+  }	else {
     // Note: the 0xEE index string is a Microsoft OS 1.0 Descriptors.
     // https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/microsoft-defined-usb-descriptors
 
