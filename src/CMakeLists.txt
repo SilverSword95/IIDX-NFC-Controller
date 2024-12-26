@@ -1,15 +1,15 @@
-add_executable(Pico_Game_Controller
-        pico_game_controller.c
+add_executable(SilverIIDX
+        main.c
         usb_descriptors.c
-		nfc.c pn532.c)
+		nfc/nfc.c nfc/pn532.c)
 
-target_include_directories(Pico_Game_Controller PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(SilverIIDX PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
-pico_generate_pio_header(Pico_Game_Controller ${CMAKE_CURRENT_LIST_DIR}/encoders.pio)
-pico_generate_pio_header(Pico_Game_Controller ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
-target_sources(Pico_Game_Controller PRIVATE pico_game_controller.c)
+pico_generate_pio_header(SilverIIDX ${CMAKE_CURRENT_LIST_DIR}/encoders.pio)
+pico_generate_pio_header(SilverIIDX ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
+target_sources(SilverIIDX PRIVATE main.c)
 
-target_link_libraries(Pico_Game_Controller PRIVATE
+target_link_libraries(SilverIIDX PRIVATE
         pico_multicore
         pico_stdlib
         tinyusb_device
@@ -24,9 +24,9 @@ target_link_libraries(Pico_Game_Controller PRIVATE
 		hardware_watchdog
 		pico_unique_id)
 
-pico_add_extra_outputs(Pico_Game_Controller)
+pico_add_extra_outputs(SilverIIDX)
 
-add_custom_command(TARGET Pico_Game_Controller
+add_custom_command(TARGET SilverIIDX
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_BINARY_DIR}/src/Pico_Game_Controller.uf2 ${PROJECT_SOURCE_DIR}/build_uf2/Pico_Game_Controller.uf2
+        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_BINARY_DIR}/src/SilverIIDX.uf2 ${PROJECT_SOURCE_DIR}/build_uf2/SilverIIDX.uf2
 )

@@ -194,7 +194,7 @@ char const* string_desc_arr[] = {
     "Red 2",
     "Green 2",
     "Blue 2",
-	"IIDX CardIO", //22: NFC String
+    "IIDX CardIO", //22: NFC String
 };
 
 static uint16_t _desc_str[64];

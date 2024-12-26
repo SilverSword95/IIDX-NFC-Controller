@@ -2,7 +2,7 @@
 #define USB_DESCRIPTORS_H_
 
 #include "common/tusb_common.h"
-#include "controller_config.h"
+#include "board_defs.h"
 #include "device/usbd.h"
 
 enum {
