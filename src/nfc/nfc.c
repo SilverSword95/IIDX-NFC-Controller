@@ -45,12 +45,14 @@ struct {
     { null_poll_mifare, null_poll_felica, null_poll_vicinity,},
 };
 
-void nfc_init(nfc_wait_loop_t loop)
+bool nfc_init(nfc_wait_loop_t loop)
 {
     if (pn532_init(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ)) {
         nfc_module = NFC_MODULE_PN532;
         pn532_set_wait_loop(loop);
+		return true;
     }
+	return false;
 }
 
 static void nfc_config_sam()
