@@ -1,13 +1,16 @@
 add_executable(SilverIIDX
-        main.c
+        main.cpp
         usb_descriptors.c
-		nfc/nfc.c nfc/pn532.c)
+		nfc/nfc.c nfc/pn532.c
+		controller_simulator.cpp)
 
 target_include_directories(SilverIIDX PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
+pico_set_linker_script(SilverIIDX ${CMAKE_CURRENT_LIST_DIR}/memmap.ld)
 pico_generate_pio_header(SilverIIDX ${CMAKE_CURRENT_LIST_DIR}/encoders.pio)
 pico_generate_pio_header(SilverIIDX ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
-target_sources(SilverIIDX PRIVATE main.c)
+pico_generate_pio_header(SilverIIDX ${CMAKE_CURRENT_LIST_DIR}/psxSPI.pio)
+target_sources(SilverIIDX PRIVATE main.cpp)
 
 target_link_libraries(SilverIIDX PRIVATE
         pico_multicore
