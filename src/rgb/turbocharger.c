@@ -66,9 +66,9 @@ int turbo_lights_idle[ENC_GPIO_SIZE];
 
 void turbocharger_color_cycle(uint32_t unused) {
   for (int i = 0; i < ENC_GPIO_SIZE; i++) {
-    int enc_delta = (enc_val[i] - turbo_prev_enc_val[i]);
+    int enc_delta_ = (enc_val[i] - turbo_prev_enc_val[i]) * (ENC_DELTA);
     turbo_prev_enc_val[i] = enc_val[i];
-    turbo_cur_enc_val[i] = f_clamp(turbo_cur_enc_val[i] + (float)(enc_delta) / ENC_PULSE, -TURBO_LIGHTS_CLAMP, TURBO_LIGHTS_CLAMP);
+    turbo_cur_enc_val[i] = f_clamp(turbo_cur_enc_val[i] + (float)(enc_delta_) / ENC_PULSE, -TURBO_LIGHTS_CLAMP, TURBO_LIGHTS_CLAMP);
 
     if (turbo_cur_enc_val[i] < -TURBO_LIGHTS_THRESHOLD) {
       turbo_lights_idle[i] = 0;
