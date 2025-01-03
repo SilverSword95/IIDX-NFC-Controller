@@ -7,8 +7,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
-#include "nfc_defs.h"
+#include "../board_defs.h"
 
 #include "nfc.h"
 #include "pn532.h"
