@@ -466,11 +466,11 @@ void psx_init(){
 	multicore_launch_core1(simulation_thread);
 }
 
-// Current mapping: Square, L1, Cross, R1, Circle, L2, Left, UNUSED GPIO, Start, Select, Up, Down
+// Current mapping: Square, L1, Cross, R1, Circle, L2, Left, UNUSED GPIO, Start, Select, Down, Up
 
 void psx_task(uint16_t but) {
     inputState.buttons1 = ~(((but & 0x200 ? 1 : 0) << 0) | (0 << 1) | (0 << 2) | ((but & 0x100 ? 1 : 0) << 3) |
-		                    ((but & 0x400 ? 1 : 0) << 4) | ((but & 0x800 ? 1 : 0) << 5) | (0 << 6) | ((but & 0x080 ? 1 : 0) << 7));
+		                    ((but & 0x800 ? 1 : 0) << 4) | (0 << 5) | ((but & 0x400 ? 1 : 0) << 6) | ((but & 0x040 ? 1 : 0) << 7));
     inputState.buttons2 = ~(((but & 0x020 ? 1 : 0) << 0) | (0 << 1) | ((but & 0x002 ? 1 : 0) << 2) | ((but & 0x008 ? 1 : 0) << 3) |
 		              (0 << 4) | ((but & 0x010 ? 1 : 0) << 5) | ((but & 0x004 ? 1 : 0) << 6) | ((but & 0x001 ? 1 : 0) << 7));
 }

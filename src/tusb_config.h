@@ -26,6 +26,8 @@
 #ifndef _TUSB_CONFIG_H_
 #define _TUSB_CONFIG_H_
 
+#define NFC_MODULE // If you want to use PN532 NFC, uncomment that
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -96,7 +98,11 @@ extern "C" {
 #endif
 
 //------------- CLASS -------------//
+#ifdef NFC_MODULE
 #define CFG_TUD_HID 2 //Gamepad + NFC
+#else
+#define CFG_TUD_HID 1
+#endif
 #define CFG_TUD_CDC 0
 #define CFG_TUD_MSC 0
 #define CFG_TUD_MIDI 0

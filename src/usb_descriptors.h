@@ -65,6 +65,7 @@ enum {
       HID_USAGE_MAX(31 * 8 - 1), HID_INPUT(HID_VARIABLE), HID_COLLECTION_END
 	  
 //NFC Descriptor
+#ifdef NFC_MODULE
 #define GAMECON_REPORT_DESC_CARDIO                         \
     HID_USAGE_PAGE_N(0xffca, 2),                           \
     HID_USAGE(0x01),                                       \
@@ -83,5 +84,6 @@ enum {
         HID_REPORT_SIZE(8), HID_REPORT_COUNT(8),           \
         HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE), \
     HID_COLLECTION_END
+#endif
 
 #endif /* USB_DESCRIPTORS_H_ */

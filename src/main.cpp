@@ -25,12 +25,9 @@
 #include "rgb/rgb_include.h"
 // clang-format on
 
-#include "nfc/nfc_defs.h"
 #include "nfc/nfc.h"
 
 #include "controller_simulator.h" //PlayStation mode
-#define TUD_MOUNT_TIMEOUT	1500
-#define ENCODER_Z_MILLIS_TOLERANCE 300  // Amount of miliseconds to wait and change state of turntable buttons
 
 PIO pio, pio_1;
 uint32_t enc_val[ENC_GPIO_SIZE];
@@ -115,7 +112,7 @@ void update_lights() {
 struct report {
   uint16_t buttons;
   uint8_t joy0 = 0;
-  uint8_t joy1;
+  uint8_t joy1 = 127;
 } report;
 
 /**
@@ -201,14 +198,13 @@ void joy_mode() {
     // find the delta between previous and current enc_val
     for (int i = 0; i < ENC_GPIO_SIZE; i++) {
       cur_enc_val[i] +=
-          ((enc_val[i] - prev_enc_val[i]));
+          ((ENC_DELTA) * (enc_val[i] - prev_enc_val[i]));
       while (cur_enc_val[i] < 0) cur_enc_val[i] = ENC_PULSE + cur_enc_val[i];
       cur_enc_val[i] %= ENC_PULSE;
       prev_enc_val[i] = enc_val[i];
     }
 	
     report.joy0 = ((double)cur_enc_val[0] / ENC_PULSE) * (UINT8_MAX + 1);
-	report.joy1 = 127;
 	
 	//Virtual turntable buttons (mainly for LR2 or PlayStation)
 	if (lr2_enabled or psx_enabled){
@@ -239,7 +235,7 @@ void joy_mode() {
  * Keyboard Mode
  **/
 void key_mode() {
-  if (tud_hid_ready()) {  // Wait for ready, updating mouse too fast hampers
+  if (tud_hid_ready() && !psx_enabled) {  // Wait for ready, updating mouse too fast hampers
                           // movement
     if (kbm_report) {
       /*------------- Keyboard -------------*/
@@ -262,7 +258,7 @@ void key_mode() {
       // find the delta between previous and current enc_val
       int delta[ENC_GPIO_SIZE] = {0};
       for (int i = 0; i < ENC_GPIO_SIZE; i++) {
-        delta[i] = (enc_val[i] - prev_enc_val[i]);
+        delta[i] = (enc_val[i] - prev_enc_val[i]) * (ENC_DELTA);
         prev_enc_val[i] = enc_val[i];
       }
       tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta[0] * MOUSE_SENS, 0, 0,
@@ -350,12 +346,6 @@ void init() {
 
   reactive_timeout_timestamp = time_us_64();
 
-  // Set up WS2812B
-  pio_1 = pio1;
-  uint offset2 = pio_add_program(pio_1, &ws2812_program);
-  ws2812_program_init(pio_1, ENC_GPIO_SIZE, offset2, WS2812B_GPIO, 800000,
-                      false);
-
   // Setup Button GPIO
   for (int i = 0; i < SW_GPIO_SIZE; i++) {
     prev_sw_val[i] = false;
@@ -433,6 +423,10 @@ int main(void) {
 // Invoked when device is mounted
 void tud_mount_cb(void) {
 	tud_mount_status = true;
+	// Set up WS2812B
+	pio_1 = pio1;
+	uint offset2 = pio_add_program(pio_1, &ws2812_program);
+	ws2812_program_init(pio_1, ENC_GPIO_SIZE, offset2, WS2812B_GPIO, 800000, false);
 	if (rgb_nfc_enabled) {
 		nfc_enabled = nfc_init(wait_loop);
 		multicore_launch_core1(core1_entry);
